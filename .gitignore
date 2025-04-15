@@ -20,3 +20,6 @@ wheels/
 
 # FLAME model, should be downloaded manually
 /utils/model/*
+
+# results
+results/
