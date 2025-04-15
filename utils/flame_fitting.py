@@ -21,7 +21,6 @@ import torch
 from tqdm import tqdm
 from torch.optim import LBFGS
 from psbody.mesh import Mesh
-from psbody.mesh.meshviewer import MeshViewer
 from config import model_path
 
 # Import FLAME from PyTorch implementation
@@ -127,7 +126,8 @@ def fit_3D_mesh(target_3d_mesh_fname, weights, device='cuda', show_fitting=True)
 
     # Get the final mesh
     with torch.no_grad():
-        vertices, _ = flame_model(shape, expression, pose, neck_pose, eye_pose, transl=trans)
+        neutral_pose = torch.zeros(1, config.pose_params, device=device)
+        vertices, _ = flame_model(shape, expression, neutral_pose, neck_pose, eye_pose)
         vertices = vertices.squeeze(0).cpu().numpy()
 
     # TODO: Visualize the result mesh
@@ -146,7 +146,7 @@ def fit_3D_mesh(target_3d_mesh_fname, weights, device='cuda', show_fitting=True)
 
 def run_corresponding_mesh_fitting():
     # target 3D mesh in dense vertex-correspondence to the model
-    target_mesh_path = '../data/test_samples/anger.000001.ply'
+    target_mesh_path = '../data/test_samples/happiness.000002.ply'
 
     # Output filename
     out_mesh_fname = './results/mesh_fitting.ply'
