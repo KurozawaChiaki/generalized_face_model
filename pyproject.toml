@@ -1,0 +1,15 @@
+[project]
+name = "learning-face-model"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "pip>=25.0.1",
+    "setuptools>=75.3.2",
+    "wheel>=0.45.1",
+    "open3d>=0.19.0",
+    "tqdm>=4.67.1",
+    "trimesh>=4.6.6",
+    "numpy==1.23",
+]
