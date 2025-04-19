@@ -22,4 +22,4 @@ wheels/
 /utils/model/*
 
 # results
-results/
+processed_data/
