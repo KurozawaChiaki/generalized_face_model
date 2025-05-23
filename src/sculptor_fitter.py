@@ -4,6 +4,7 @@ import os
 import trimesh
 from tqdm import tqdm
 import torch.nn.functional as F
+from typing import Optional
 
 from dependencies.sculptor.model.sculptor import SCULPTOR_layer
 
@@ -146,7 +147,12 @@ class SculptorFitter():
         return translation_result, rotation_result
 
     
-    def custom_chamfer_distance(self, p1: torch.Tensor, p2: torch.Tensor, p1_lengths: torch.Tensor=None, p2_lengths: torch.Tensor=None, device: str="cuda") -> torch.Tensor:
+    def custom_chamfer_distance(self, 
+                                p1: torch.Tensor, 
+                                p2: torch.Tensor, 
+                                p1_lengths: Optional[torch.Tensor]=None, 
+                                p2_lengths: Optional[torch.Tensor]=None, 
+                                device: str="cuda") -> torch.Tensor:
         """
         Custom Chamfer distance implementation.
         
@@ -205,7 +211,7 @@ class SculptorFitter():
         initial_translation, initial_rotation = self.compute_initial_translation_and_rotation()
         scale = self.compute_approximate_scale()
 
-
+'''
 # --- Main Fitting Function ---
 def fit_sculptor_to_target(target_mesh_path,
                            paradict_path,
@@ -338,3 +344,4 @@ def main():
 
 if __name__ == '__main__':
     main() 
+'''
