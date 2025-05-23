@@ -65,7 +65,7 @@ uv pip install .
 
 You can get the FLAME model from [FLAME website](https://flame.is.tue.mpg.de/).
 
-After downloading the model, unzip it and place them into the `./utils/model` folder, and rename it as `generic_model.pkl`.
+After downloading the model, unzip it and place them into the `./model` folder, and rename it as `generic_model.pkl`.
 
 You should also download embeddings from [RingNet project](https://github.com/soubhiksanyal/RingNet/tree/master/flame_model). Copy it inside the model folder as well.
 
@@ -73,8 +73,4 @@ Now you should be able to run the script.
 
 ## Usage
 
-Fitting FLAME model to a exist 3D facial mesh in FLAME topology:
-```bash
-cd utils
-uv run flame_fitting.py
-```
+Not yet finished, to be implemented in the future.
