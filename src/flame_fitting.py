@@ -3,12 +3,12 @@ import numpy as np
 import torch
 from tqdm import tqdm
 from psbody.mesh import Mesh
-from config import model_path
+# from dependencies.sculptor.model import SCULPTOR_layer, sculptor
 
 # Import FLAME from PyTorch implementation
 from flame_pytorch import FLAME, get_config
 
-def fit_3D_mesh(batch_size, target_3d_mesh_fname, weights, device='cuda', show_fitting=True):
+def fit_3D_mesh(batch_size, target_3d_mesh_fname, weights, device='cuda'):
     '''
     Fit FLAME to 3D mesh in correspondence to the FLAME mesh (i.e. same number of vertices, same mesh topology)
     :param target_3d_mesh_fname:    target 3D mesh filename
@@ -28,9 +28,12 @@ def fit_3D_mesh(batch_size, target_3d_mesh_fname, weights, device='cuda', show_f
 
     # Set up FLAME model
     config = get_config()
-    config.flame_model_path = model_path.flame_model_path
-    config.static_landmark_embedding_path = model_path.flame_static_embedding_path
-    config.dynamic_landmark_embedding_path = model_path.flame_dynamic_embedding_path
+    config.shape_params = 300
+    config.expression_params = 100
+    # TODO: add the model path
+    config.flame_model_path = None
+    config.static_landmark_embedding_path = None
+    config.dynamic_landmark_embedding_path = None
     config.batch_size = batch_size
 
     flame_model = FLAME(config).to(device)
@@ -52,8 +55,10 @@ def fit_3D_mesh(batch_size, target_3d_mesh_fname, weights, device='cuda', show_f
         eye_pose = None
     
     # First optimize only the global transformation
-    # rigid_optimizer = LBFGS([trans, pose], lr=1.0, max_iter=100, line_search_fn='strong_wolfe')
-    rigid_optimizer = torch.optim.Adam([trans, pose], lr=0.001)
+    # rigid_optimizer = torch.optim.LBFGS([trans, pose], lr=1.0, max_iter=100, line_search_fn='strong_wolfe')
+    rigid_optimizer = torch.optim.AdamW([trans, pose], lr=0.001)
+
+    vertices, _ = flame_model(shape, expression, pose, neck_pose, eye_pose, transl=trans)
 
     def rigid_closure():
         rigid_optimizer.zero_grad()
@@ -68,13 +73,13 @@ def fit_3D_mesh(batch_size, target_3d_mesh_fname, weights, device='cuda', show_f
         return loss
 
     print('STAGE 1: Optimize rigid transformation')
-    pbar = tqdm(range(5000))
+    pbar = tqdm(range(2000 * batch_size))
     for i in pbar:
         rigid_optimizer.step(rigid_closure)
         
     # Then optimize all parameters
-    # optimizer = LBFGS([trans, pose, shape, expression], lr=1.0, max_iter=100, line_search_fn='strong_wolfe')
-    optimizer = torch.optim.Adam([trans, pose, shape, expression], lr=0.001)
+    # optimizer = torch.optim.LBFGS([trans, pose, shape, expression], lr=1.0, max_iter=100, line_search_fn='strong_wolfe')
+    optimizer = torch.optim.AdamW([trans, pose, shape, expression], lr=0.001)
 
     def closure():
         optimizer.zero_grad()
@@ -85,9 +90,17 @@ def fit_3D_mesh(batch_size, target_3d_mesh_fname, weights, device='cuda', show_f
         mesh_dist = torch.sum((vertices - target_vertices) ** 2)
         
         # Regularization terms
-        neck_pose_reg = torch.sum(neck_pose ** 2)
+        if neck_pose is not None:
+            neck_pose_reg = torch.sum(neck_pose ** 2)
+        else:
+            neck_pose_reg = torch.tensor(0.0, device=device)
+
+        if eye_pose is not None:
+            eyeballs_pose_reg = torch.sum(eye_pose ** 2)
+        else:
+            eyeballs_pose_reg = torch.tensor(0.0, device=device)
+        
         jaw_pose_reg = torch.sum(pose ** 2)
-        eyeballs_pose_reg = torch.sum(eye_pose ** 2)
         shape_reg = torch.sum(shape ** 2)
         exp_reg = torch.sum(expression ** 2)
         
@@ -105,7 +118,7 @@ def fit_3D_mesh(batch_size, target_3d_mesh_fname, weights, device='cuda', show_f
 
     print('STAGE 2: Optimize model parameters')
 
-    pbar = tqdm(range(10000))
+    pbar = tqdm(range(40000 * batch_size))
     for i in pbar:
         optimizer.step(closure)
 
@@ -113,27 +126,15 @@ def fit_3D_mesh(batch_size, target_3d_mesh_fname, weights, device='cuda', show_f
 
     # Get the final mesh
     with torch.no_grad():
-        neutral_pose = torch.zeros(batch_size, config.pose_params, device=device)
-        vertices, _ = flame_model(shape, expression, neutral_pose, neck_pose, eye_pose)
+        # neutral_pose = torch.zeros(batch_size, config.pose_params, device=device)
+        vertices, _ = flame_model(shape, expression, pose, neck_pose, eye_pose)
         vertices = vertices.cpu().numpy()
-
-    # TODO: Visualize the result mesh
-    '''
-    if show_fitting:
-        # Visualize fitting
-        mv = MeshViewer()
-        fitting_mesh = Mesh(vertices, flame_model.faces)
-        fitting_mesh.set_vertex_colors('light sky blue')
-
-        mv.set_static_meshes([target_mesh, fitting_mesh])
-        input('Press key to continue')
-    '''
 
     return vertices, flame_model.faces, shape, expression
 
 def run_corresponding_mesh_fitting():
     # target 3D mesh in dense vertex-correspondence to the model
-    target_mesh_path = '../data/FaMoS/'
+    target_mesh_path = '../data/test_samples/'
 
     # Output filename
     out_mesh_fname = '../processed_data/'
