@@ -81,7 +81,7 @@ class SculptorFitter():
         for iter_num in pbar:
             optimizer.zero_grad()
 
-            fitted_mesh_vertices = template_vertices * scale * eye
+            fitted_mesh_vertices = self.target_vertices * scale * eye
 
             loss = self.custom_chamfer_distance(fitted_mesh_vertices, self.target_vertices)
 
@@ -131,7 +131,7 @@ class SculptorFitter():
 
             rotation_matrix = self.rotation6d_to_matrix(rotation)
             # (N, 3) * (3, 3) + (3,) = (N, 3)
-            fitted_mesh_vertices = template_vertices * rotation_matrix + translation
+            fitted_mesh_vertices = self.target_vertices * rotation_matrix + translation
 
             loss = self.custom_chamfer_distance(fitted_mesh_vertices, self.target_vertices)
 
@@ -207,141 +207,54 @@ class SculptorFitter():
         return chamfer_loss
     
 
-    def fit(self):
+    def fit(self) -> tuple[dict[str, np.ndarray], torch.Tensor]:
+        # TODO: determine the order of fitting
         initial_translation, initial_rotation = self.compute_initial_translation_and_rotation()
-        scale = self.compute_approximate_scale()
+        scale: np.ndarray = self.compute_approximate_scale()
+        print(f"Scale: {scale}")
+        print(f"Initial translation: {initial_translation}")
+        print(f"Initial rotation: {initial_rotation}")
 
-'''
-# --- Main Fitting Function ---
-def fit_sculptor_to_target(target_mesh_path,
-                           paradict_path,
-                           output_dir="fitted_results",
-                           num_iterations=200,
-                           lr=0.01,
-                           shape_reg_weight=0.001,
-                           pose_reg_weight=0.001):
-    """
-    Fits the SCULPTOR model to a target mesh.
-    """
-    print(f"Target mesh: {target_mesh_path}")
-    print(f"SCULPTOR params: {paradict_path}")
-    print(f"Output directory: {output_dir}")
-    print(f"Iterations: {num_iterations}, LR: {lr}")
-    
-    os.makedirs(output_dir, exist_ok=True)
+        self.target_vertices = self.target_vertices * scale * self.rotation6d_to_matrix(initial_rotation) + initial_translation
 
-    # Load target mesh
-    try:
-        target_vertices = load_target_mesh_vertices(target_mesh_path) # Shape: (N_target_verts, 3)
-    except Exception as e:
-        print(f"Error loading target mesh '{target_mesh_path}': {e}")
-        return None, None
-    print(f"Target vertices: {target_vertices.shape}")
+        beta_s = torch.tensor(np.zeros((1, self.n_shape)) + 1e-5, dtype=self.sculptor_model.dtype, requires_grad=True)
+        pose_theta = torch.tensor(np.tile(np.zeros(3 * (self.num_joints + 1)).reshape(1, 3 * (self.num_joints + 1)),(1, 1)), dtype=self.sculptor_model.dtype, requires_grad=True)
+        jaw_offset = torch.tensor(np.zeros((1, 3, 1)), dtype=self.sculptor_model.dtype, requires_grad=True)
+
+        # Optimizer
+        optimizer = torch.optim.AdamW([beta_s, pose_theta, jaw_offset], lr=self.lr)
+
+        print("Starting optimization...")
+        # Optimization loop
+        pbar: tqdm = tqdm(range(self.num_iterations))
+        for iter_num in pbar:
+            optimizer.zero_grad()
+
+            fitted_mesh_vertices = self.sculptor_model(beta_s, pose_theta, jaw_offset)
+
+            loss_chamfer: torch.Tensor = self.custom_chamfer_distance(fitted_mesh_vertices, self.target_vertices)
         
-    target_vertices = target_vertices.unsqueeze(0) # Add batch dimension (B=1)
+            loss_reg_shape: torch.Tensor = torch.mean(beta_s**2)
+            loss_reg_pose: torch.Tensor = torch.mean(pose_theta**2) # Regularize pose parameters
+            
+            loss = loss_chamfer + self.shape_reg_weight * loss_reg_shape + self.pose_reg_weight * loss_reg_pose
 
-    # Initialize SCULPTOR model
-    try:
-        sculptor_model = SCULPTOR_layer(paradict_path)
-    except Exception as e:
-        print(f"Error initializing SCULPTOR_layer (possibly related to '{paradict_path}'): {e}")
-        return None, None
+            loss.backward()
+            optimizer.step()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
-    sculptor_model.to(device)
-    target_vertices = target_vertices.to(device, dtype=sculptor_model.dtype)
+            pbar.set_description(f"Loss: {loss.item():.6f}")
 
-    # Initialize parameters to optimize
-    num_shape_params = sculptor_model.shape_dirs.shape[2]
-    num_joints = 1
+        with torch.no_grad():
+            optimized_params_dict: dict[str, np.ndarray] = {
+                'beta_s': beta_s.detach().cpu().numpy(),
+                'pose_theta': pose_theta.detach().cpu().numpy(),
+                'jaw_offset': jaw_offset.detach().cpu().numpy()
+            }
+            final_fitted_mesh_verts: torch.Tensor = fitted_mesh_vertices.detach().cpu()
 
-    beta_s = torch.tensor(np.zeros((1, num_shape_params)) + 1e-5, dtype=sculptor_model.dtype, requires_grad=True)
-    pose_theta = torch.tensor(np.tile(np.zeros(3 * (num_joints + 1)).reshape(1, 3 * (num_joints + 1)),(1, 1)), dtype=sculptor_model.dtype, requires_grad=True)
-    jaw_offset = torch.tensor(np.zeros((1, 3, 1)), dtype=sculptor_model.dtype, requires_grad=True)
-
-    # Optimizer
-    optimizer = torch.optim.AdamW([beta_s, pose_theta, jaw_offset], lr=lr)
-
-    print("Starting optimization...")
-    # Optimization loop
-    for iter_num in range(num_iterations):
-        optimizer.zero_grad()
-
-        fitted_mesh_vertices = sculptor_model(beta_s, pose_theta, jaw_offset)
-
-        loss_chamfer = custom_chamfer_distance(fitted_mesh_vertices, target_vertices)
-        
-        loss_reg_shape = torch.mean(beta_s**2)
-        loss_reg_pose = torch.mean(pose_theta**2) # Regularize pose parameters
-        
-        loss = loss_chamfer + shape_reg_weight * loss_reg_shape + pose_reg_weight * loss_reg_pose
-
-        loss.backward()
-        optimizer.step()
-
-        if iter_num % 10 == 0 or iter_num == num_iterations -1 :
-            print(f"Iter {iter_num:04d}/{num_iterations-1} | Loss: {loss.item():.6f} "
-                  f"(Chamfer: {loss_chamfer.item():.6f}, ShapeReg: {loss_reg_shape.item():.6f}, PoseReg: {loss_reg_pose.item():.6f})")
-
-    # Get final results
-    optimized_params_dict = {
-        'beta_s': beta_s.detach().cpu().numpy(),
-        'pose_theta': pose_theta.detach().cpu().numpy(),
-        'jaw_offset': jaw_offset.detach().cpu().numpy()
-    }
-    final_fitted_mesh_verts = sculptor_model(beta_s, pose_theta, jaw_offset).detach().cpu()
-
-    # Save optimized parameters
-    params_path = os.path.join(output_dir, "optimized_sculptor_params.npz")
-    np.savez(params_path, **optimized_params_dict)
-    print(f"Saved optimized parameters to {params_path}")
-
-    # Save the fitted facial mesh
-    num_skull_verts = sculptor_model.template_skull.shape[0]
-    facial_mesh_vertices_fitted = final_fitted_mesh_verts[0, num_skull_verts:].numpy()
-    # sculptor_model.facialmesh_face contains 0-indexed faces for the facial part
-    facial_mesh_faces = sculptor_model.facialmesh_face 
-    
-    output_face_obj_path = os.path.join(output_dir, "fitted_face_mesh.obj")
-    save_mesh_to_obj(facial_mesh_vertices_fitted, facial_mesh_faces, output_face_obj_path)
-    print(f"Saved fitted facial mesh to {output_face_obj_path}")
-
-    # Save the full fitted mesh (skull + face)
-    full_fitted_vertices = final_fitted_mesh_verts[0].numpy()
-    skull_faces = sculptor_model.skullmesh_face
-    # Offset face indices by number of skull vertices for the combined mesh
-    face_faces_offset = sculptor_model.facialmesh_face + num_skull_verts 
-    full_faces = np.vstack([skull_faces, face_faces_offset])
-    
-    output_full_obj_path = os.path.join(output_dir, "fitted_full_mesh.obj")
-    save_mesh_to_obj(full_fitted_vertices, full_faces, output_full_obj_path)
-    print(f"Saved full fitted mesh (skull+face) to {output_full_obj_path}")
-
-    print("Fitting complete.")
-    return optimized_params_dict, final_fitted_mesh_verts
+        return optimized_params_dict, final_fitted_mesh_verts
 
 
-def main():
-    target_mesh = './data/test/target_mesh.ply'
-    paradict_path = './dependencies/sculptor/model/paradict.npy'
-    output_dir = './data/test/fitted_results'
-    
-    num_iterations = 200
-    lr = 0.01
-    shape_reg = 0.001
-    pose_reg = 0.001
-
-    fit_sculptor_to_target(
-        target_mesh_path=target_mesh,
-        paradict_path=paradict_path,
-        output_dir=output_dir,
-        num_iterations=num_iterations,
-        lr=lr,
-        shape_reg_weight=shape_reg,
-        pose_reg_weight=pose_reg
-    )
-
-if __name__ == '__main__':
-    main() 
-'''
+if __name__ == "__main__":
+    # TODO: test codes
+    pass
