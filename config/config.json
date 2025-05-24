@@ -1,0 +1,12 @@
+{
+    "flame_config":
+    {
+        "model_path": "models/flame/flame2023.pkl",
+        "static_embedding_path": "models/flame/flame_static_embedding.pkl",
+        "dynamic_embedding_path": "models/flame/flame_dynamic_embedding.npy"
+    },
+    "sculptor_config":
+    {
+        "model_path": "models/sculptor/paradict.npy"
+    }
+}
