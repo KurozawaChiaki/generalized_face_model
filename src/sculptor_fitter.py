@@ -168,7 +168,7 @@ class SculptorFitter():
 
         # diff[b, i, j, :] = p1[b, i, :] - p2[b, j, :]
         diff = p1.unsqueeze(2) - p2.unsqueeze(1)  # (B, N, M, 3)
-        dist_sq = torch.sum(diff**2, dim=3)  # (B, N, M)
+        dist_sq = torch.sum(torch.pow(diff, 2), dim=3)  # (B, N, M)
     
         # Mask invalid distances if lengths are provided (for padded batches)
         if p1_lengths is not None:
@@ -234,8 +234,8 @@ class SculptorFitter():
 
             loss_chamfer: torch.Tensor = self.custom_chamfer_distance(fitted_mesh_vertices, self.target_vertices)
         
-            loss_reg_shape: torch.Tensor = torch.mean(beta_s**2)
-            loss_reg_pose: torch.Tensor = torch.mean(pose_theta**2) # Regularize pose parameters
+            loss_reg_shape: torch.Tensor = torch.mean(torch.square(beta_s))
+            loss_reg_pose: torch.Tensor = torch.mean(torch.square(pose_theta)) # Regularize pose parameters
             
             loss = loss_chamfer + self.shape_reg_weight * loss_reg_shape + self.pose_reg_weight * loss_reg_pose
 
