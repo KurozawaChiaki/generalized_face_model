@@ -19,7 +19,4 @@ wheels/
 /dependencies/*
 
 # Models (including FLAME, SCULPTOR), should be downloaded manually
-/model/*
-
-# results
-processed_data/
+/models/*
