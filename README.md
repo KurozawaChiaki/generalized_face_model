@@ -65,11 +65,11 @@ uv pip install .
 
 You can get the FLAME model from [FLAME website](https://flame.is.tue.mpg.de/).
 
-After downloading the model, unzip it and place them into the `./model` folder, and rename it as `generic_model.pkl`.
+After downloading the model, unzip it and place them into the `./model/flame` folder.
 
-You should also download embeddings from [RingNet project](https://github.com/soubhiksanyal/RingNet/tree/master/flame_model). Copy it inside the model folder as well.
+You should also download embeddings from [RingNet project](https://github.com/soubhiksanyal/RingNet/tree/master/flame_model). Copy it inside the flame folder as well.
 
-Now you should be able to run the script.
+For SCULPTOR, you can get the model from [SCULPTOR repository](https://github.com/sculptor2022/sculptor). Place `paradict.npy` into the `./model/sculptor` folder.
 
 ## Usage
 
