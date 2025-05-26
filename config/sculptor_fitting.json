@@ -1,0 +1,4 @@
+{
+    "target_mesh_path": "data/test_data/target_meshes/flame_neutral.ply",
+    "output_path": "output/test_data/"
+}
