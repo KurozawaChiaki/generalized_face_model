@@ -20,3 +20,5 @@ wheels/
 
 # Models (including FLAME, SCULPTOR), should be downloaded manually
 /models/*
+
+/output/*
