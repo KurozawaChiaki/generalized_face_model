@@ -17,7 +17,7 @@ def main():
 
         sculptor_fitter = SculptorFitter(target_mesh_path=target_mesh_path, 
                                         sculptor_paradict_path=sculptor_path, 
-                                        num_iterations=1,
+                                        num_iterations=100,
                                         output_dir=fitting_config["output_path"])
         sculptor_fitter.fit()
     else:
