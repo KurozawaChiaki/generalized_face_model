@@ -6,7 +6,7 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from typing import Optional
 
-from dependencies.sculptor.model.sculptor import SCULPTOR_layer
+from libs.sculptor.model.sculptor import SCULPTOR_layer
 
 
 class SculptorFitter:
@@ -59,14 +59,16 @@ class SculptorFitter:
         self.pose_reg_weight = pose_reg_weight
         self.lr = lr
         self.num_iterations = num_iterations
-        
+
         sculptor_mesh = self.get_sculptor_mesh()
         sculptor_centroid = sculptor_mesh.centroid.reshape(3, 1)
         self.initial_translation = torch.tensor(
             sculptor_centroid, dtype=self.sculptor_model.dtype, device=self.device
         )
         self.initial_rotation = torch.tensor(
-            np.asarray([1.0, 0., 0., 0., 0., -1.]), dtype=self.sculptor_model.dtype, device=self.device
+            np.asarray([1.0, 0.0, 0.0, 0.0, 0.0, -1.0]),
+            dtype=self.sculptor_model.dtype,
+            device=self.device,
         )
 
     def get_sculptor_mesh(self) -> trimesh.Trimesh:
@@ -105,7 +107,9 @@ class SculptorFitter:
         template_vertices = template_vertices.unsqueeze(0)
 
         initial_rotation_matrix = self.rotation6d_to_matrix(self.initial_rotation)
-        template_vertices = torch.matmul(initial_rotation_matrix, template_vertices.transpose(1, 2))
+        template_vertices = torch.matmul(
+            initial_rotation_matrix, template_vertices.transpose(1, 2)
+        )
         template_vertices = template_vertices + self.initial_translation
         template_vertices = template_vertices.transpose(1, 2)
 
@@ -124,12 +128,16 @@ class SculptorFitter:
         )
 
         # optimizer = torch.optim.AdamW([scale], lr=self.lr)
-        optimizer = torch.optim.LBFGS([scale], lr=1.0, max_iter=100, line_search_fn='strong_wolfe')
+        optimizer = torch.optim.LBFGS(
+            [scale], lr=1.0, max_iter=100, line_search_fn="strong_wolfe"
+        )
 
         def closure():
             optimizer.zero_grad()
-            
-            fitted_mesh_vertices = torch.matmul((scale * eye), target_vertices_tensor.transpose(0, 1))
+
+            fitted_mesh_vertices = torch.matmul(
+                (scale * eye), target_vertices_tensor.transpose(0, 1)
+            )
             fitted_mesh_vertices = fitted_mesh_vertices.transpose(0, 1)
             fitted_mesh_vertices = fitted_mesh_vertices.unsqueeze(0)
 
@@ -190,7 +198,9 @@ class SculptorFitter:
 
             rotation_matrix = self.rotation6d_to_matrix(rotation)
             # (N, 3) * (3, 3) + (3,) = (N, 3)
-            fitted_mesh_vertices = torch.matmul(rotation_matrix, template_vertices.transpose(0, 1))
+            fitted_mesh_vertices = torch.matmul(
+                rotation_matrix, template_vertices.transpose(0, 1)
+            )
             fitted_mesh_vertices = fitted_mesh_vertices + translation
             fitted_mesh_vertices = fitted_mesh_vertices.transpose(0, 1)
             fitted_mesh_vertices = fitted_mesh_vertices.unsqueeze(0)
@@ -315,7 +325,9 @@ class SculptorFitter:
 
             print("Fit Scale...")
             scale: np.ndarray = self.compute_approximate_scale()
-            self.target_vertices = np.matmul((np.eye(3) * scale), self.target_vertices.transpose(1, 0))
+            self.target_vertices = np.matmul(
+                (np.eye(3) * scale), self.target_vertices.transpose(1, 0)
+            )
             self.target_vertices = self.target_vertices.transpose(1, 0)
             scale_fitted_mesh = trimesh.Trimesh(
                 vertices=self.target_vertices, faces=self.target_faces
@@ -345,12 +357,14 @@ class SculptorFitter:
             )
             transformed_vertices = torch.matmul(
                 self.rotation6d_to_matrix(self.initial_rotation),
-                transformed_vertices.transpose(0, 1)
+                transformed_vertices.transpose(0, 1),
             )
             transformed_vertices = transformed_vertices + self.initial_translation
             transformed_vertices = transformed_vertices.transpose(0, 1)
             transformed_vertices = transformed_vertices.cpu().numpy()
-            skin_mesh, _ = self.get_trimesh(transformed_vertices, self.sculptor_model.template_skull)
+            skin_mesh, _ = self.get_trimesh(
+                transformed_vertices, self.sculptor_model.template_skull
+            )
             skin_mesh.export(os.path.join(self.output_dir, f"skin_mesh_{i}.ply"))
 
         beta_s = torch.tensor(
@@ -380,7 +394,7 @@ class SculptorFitter:
         final_fitted_mesh_verts: torch.Tensor = self.target_vertices
         return optimized_params_dict, final_fitted_mesh_verts
 
-        '''
+        """
         # Optimizer
         optimizer = torch.optim.AdamW([beta_s, pose_theta, jaw_offset], lr=self.lr)
 
@@ -421,7 +435,7 @@ class SculptorFitter:
             final_fitted_mesh_verts: torch.Tensor = fitted_mesh_vertices.detach().cpu()
 
         return optimized_params_dict, final_fitted_mesh_verts
-        '''
+        """
 
 
 if __name__ == "__main__":

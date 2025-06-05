@@ -6,28 +6,32 @@ import trimesh
 import argparse
 
 import sys
-sys.path.append('.')
-from dependencies.FLAME_PyTorch.flame_pytorch.flame import FLAME
 
-def generate_neutral_mesh(output_path, device='cuda'):
-    sculptor_para = np.load('model/paradict.npy',allow_pickle=True).item()
+sys.path.append(".")
+from libs.FLAME_PyTorch.flame_pytorch.flame import FLAME
 
-    template_skull = sculptor_para['template_skull']
-    template_face = sculptor_para['template_face']
 
-    face_meshes = sculptor_para['facialmesh_face']
-    skull_meshes = sculptor_para['skullmesh_face']
+def generate_neutral_mesh(output_path, device="cuda"):
+    sculptor_para = np.load("model/paradict.npy", allow_pickle=True).item()
+
+    template_skull = sculptor_para["template_skull"]
+    template_face = sculptor_para["template_face"]
+
+    face_meshes = sculptor_para["facialmesh_face"]
+    skull_meshes = sculptor_para["skullmesh_face"]
 
     temp_vertices_index = face_meshes[:, 0]
     temp_vertices_index = temp_vertices_index.reshape(face_meshes.shape[0], 1)
-    additional_meshes = np.concatenate([temp_vertices_index, face_meshes[:, 2:]], axis=1)
+    additional_meshes = np.concatenate(
+        [temp_vertices_index, face_meshes[:, 2:]], axis=1
+    )
     face_meshes = np.concatenate([face_meshes[:, 0:3], additional_meshes], axis=0)
 
     result_mesh = Mesh(v=template_face, f=face_meshes)
-    result_mesh.write_ply(os.path.join(output_path, 'skin.ply'))
+    result_mesh.write_ply(os.path.join(output_path, "skin.ply"))
 
     result_mesh = Mesh(v=template_skull, f=skull_meshes)
-    result_mesh.write_ply(os.path.join(output_path, 'skull.ply'))
+    result_mesh.write_ply(os.path.join(output_path, "skull.ply"))
 
     config = {
         "flame_model_path": "./model/generic_model.pkl",
@@ -50,12 +54,14 @@ def generate_neutral_mesh(output_path, device='cuda'):
     trans = torch.zeros(1, 3, requires_grad=True, device=device)
     pose = torch.zeros(1, config.pose_params, requires_grad=True, device=device)
     shape = torch.zeros(1, config.shape_params, requires_grad=True, device=device)
-    expression = torch.zeros(1, config.expression_params, requires_grad=True, device=device)
+    expression = torch.zeros(
+        1, config.expression_params, requires_grad=True, device=device
+    )
     if config.optimize_neckpose:
         neck_pose = torch.zeros(1, 3, requires_grad=False, device=device)
     else:
         neck_pose = None
-            
+
     if config.optimize_eyeballpose:
         eye_pose = torch.zeros(1, 6, requires_grad=False, device=device)
     else:
@@ -69,7 +75,8 @@ def generate_neutral_mesh(output_path, device='cuda'):
     print(f"vertices: {vertices.shape}, faces: {faces.shape}")
 
     result_mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
-    result_mesh.export(os.path.join(output_path, 'flame_neutral.ply'))
+    result_mesh.export(os.path.join(output_path, "flame_neutral.ply"))
 
-if __name__ == '__main__':
-    generate_neutral_mesh('./sculptor_utils/results/')
+
+if __name__ == "__main__":
+    generate_neutral_mesh("./sculptor_utils/results/")
