@@ -26,8 +26,8 @@ You can visit [PyTorch website](https://pytorch.org/get-started/locally/) to che
 
 Clone [the official FLAME_PyTorch repository](https://github.com/soubhiksanyal/FLAME_PyTorch):
 ```bash
-mkdir dependencies
-cd dependencies
+mkdir libs
+cd libs
 git clone https://github.com/soubhiksanyal/FLAME_PyTorch.git
 ```
 
@@ -40,25 +40,6 @@ uv pip install .
 Be aware of [chumpy]() here, you should install a newer version manually to avoid errors:
 ```bash
 uv pip install git+https://github.com/mattloper/chumpy.git --no-build-isolation
-```
-
-### psbody-mesh
-
-Install the `Boost` Library:
-```bash
-sudo apt-get install libboost-dev
-```
-
-Clone the [repository](https://github.com/MPI-IS/mesh):
-```bash
-cd dependencies
-git clone https://github.com/MPI-IS/mesh.git
-```
-
-And after replacing `--install-option` with `--config-settings` in line 7 of `Makefile`, install `psbody-mesh`:
-```bash
-cd mesh
-uv pip install .
 ```
 
 ### Models
