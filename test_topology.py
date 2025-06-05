@@ -3,9 +3,6 @@ import torch
 import numpy as np
 import os
 import trimesh
-from tqdm import tqdm
-import torch.nn.functional as F
-from typing import Optional
 import pyrender
 
 from libs.sculptor.model.sculptor import SCULPTOR_layer
@@ -91,8 +88,6 @@ def main():
 
     sculptor_mesh.export("./testing/sculptor_mesh.obj")
     sculptor_skull_mesh.export("./testing/sculptor_skull_mesh.obj")
-
-    sculptor_mesh_render = pyrender.Mesh.from_trimesh(sculptor_mesh)
 
 
 if __name__ == "__main__":
