@@ -2,6 +2,6 @@
 path = libs/sculptor
 url = https://github.com/KurozawaChiaki/sculptor.git
 
-[submodule "mvlm"]
-path = libs/mvlm
-url = https://github.com/KurozawaChiaki/mvlm.git
+[submodule "libs/mvlm"]
+	path = libs/mvlm
+	url = https://github.com/KurozawaChiaki/mvlm.git
