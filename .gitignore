@@ -15,11 +15,10 @@ wheels/
 # datasets
 /data/*
 
-# dependencies
-/dependencies/*
-
 # Models (including FLAME, SCULPTOR), should be downloaded manually
 /models/*
 
 /output/*
 /testing/*
+
+/libs/FLAME_PyTorch/*
