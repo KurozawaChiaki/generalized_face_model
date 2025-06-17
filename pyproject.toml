@@ -17,8 +17,10 @@ dependencies = [
     "einops>=0.8.1",
     "chumpy",
     "flame-pytorch",
+    "mvlm",
 ]
 
 [tool.uv.sources]
 chumpy = { git = "https://github.com/mattloper/chumpy.git" }
 flame-pytorch = { path = "libs/FLAME_PyTorch" }
+mvlm = { path = "libs/mvlm" }
