@@ -22,26 +22,6 @@ uv sync
 
 You can visit [PyTorch website](https://pytorch.org/get-started/locally/) to check how to install PyTorch.
 
-### FLAME
-
-Clone [the official FLAME_PyTorch repository](https://github.com/soubhiksanyal/FLAME_PyTorch):
-```bash
-mkdir libs
-cd libs
-git clone https://github.com/soubhiksanyal/FLAME_PyTorch.git
-```
-
-Install `FLAME_PyTorch`:
-```bash
-cd FLAME_PyTorch
-uv pip install .
-```
-
-Be aware of [chumpy]() here, you should install a newer version manually to avoid errors:
-```bash
-uv pip install git+https://github.com/mattloper/chumpy.git --no-build-isolation
-```
-
 ### Models
 
 You can get the FLAME model from [FLAME website](https://flame.is.tue.mpg.de/).
