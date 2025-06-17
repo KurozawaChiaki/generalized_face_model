@@ -22,3 +22,5 @@ wheels/
 /testing/*
 
 /libs/FLAME_PyTorch/*
+
+/temp/*
