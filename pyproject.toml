@@ -15,4 +15,10 @@ dependencies = [
     "torchvision>=0.20.1",
     "torchaudio>=2.5.1",
     "einops>=0.8.1",
+    "chumpy",
+    "flame-pytorch",
 ]
+
+[tool.uv.sources]
+chumpy = { git = "https://github.com/mattloper/chumpy.git" }
+flame-pytorch = { path = "libs/FLAME_PyTorch" }
