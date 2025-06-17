@@ -23,4 +23,7 @@ dependencies = [
 [tool.uv.sources]
 chumpy = { git = "https://github.com/mattloper/chumpy.git" }
 flame-pytorch = { path = "libs/FLAME_PyTorch" }
-mvlm = { path = "libs/mvlm" }
+mvlm = { path = "libs/mvlm", editable = true }
+
+[tool.uv]
+config-settings = { editable_mode = "compat" }
