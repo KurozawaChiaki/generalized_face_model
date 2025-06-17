@@ -3,5 +3,9 @@ path = libs/sculptor
 url = https://github.com/KurozawaChiaki/sculptor.git
 
 [submodule "libs/mvlm"]
-	path = libs/mvlm
-	url = https://github.com/KurozawaChiaki/mvlm.git
+path = libs/mvlm
+url = https://github.com/KurozawaChiaki/mvlm.git
+
+[submodule "libs/FLAME_PyTorch"]
+path = libs/FLAME_PyTorch
+url = https://github.com/KurozawaChiaki/FLAME_PyTorch.git
