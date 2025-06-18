@@ -66,7 +66,7 @@ class SculptorFitter:
             sculptor_centroid, dtype=self.sculptor_model.dtype, device=self.device
         )
         self.initial_rotation = torch.tensor(
-            np.asarray([1.0, 0.0, 0.0, 0.0, 0.0, -1.0]),
+            np.asarray(a=[1.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
             dtype=self.sculptor_model.dtype,
             device=self.device,
         )
