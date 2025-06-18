@@ -49,6 +49,18 @@ class LandmarkFitter:
         # Global translation
         self.centroid = None
 
+        # Weights
+        self.weights = {}
+
+        # Weight of the data term
+        self.weights["data"] = 1000.0
+        # Weight of the shape regularizer (the lower, the less shape is constrained)
+        self.weights["shape"] = 1e-4
+        # Weight of the expression regularizer (the lower, the less expression is constrained)
+        self.weights["expr"] = 1e-4
+        # Weight of the jaw pose (i.e. jaw rotation for opening the mouth) regularizer (the lower, the less jaw pose is constrained)
+        self.weights["jaw"] = 1e-4
+
     def rotation6d_to_matrix(
         self,
         rotation6d_tensor: torch.Tensor = None,
@@ -196,7 +208,17 @@ class LandmarkFitter:
             fitted_landmarks = fitted_landmarks + translation_tensor
             fitted_landmarks = fitted_landmarks.transpose(0, 1)
 
-            loss = torch.sum((target_landmarks_tensor - fitted_landmarks) ** 2)
+            landmark_dist = torch.sum((target_landmarks_tensor - fitted_landmarks) ** 2)
+            shape_reg = torch.sum(beta**2)
+            exp_reg = torch.sum(pose**2)
+            jaw_pose_reg = torch.sum(jaw**2)
+
+            loss = (
+                self.weights["data"] * landmark_dist
+                + self.weights["shape"] * shape_reg
+                + self.weights["expr"] * exp_reg
+                + self.weights["jaw"] * jaw_pose_reg
+            )
             loss.backward()
 
             pbar.set_description(f"Loss: {loss.item():.6f}")
