@@ -18,6 +18,7 @@ dependencies = [
     "chumpy",
     "flame-pytorch",
     "mvlm",
+    "rtree>=1.4.0",
 ]
 
 [tool.uv.sources]
